@@ -284,6 +284,55 @@ function get_table_name($field) {
             color: #888;
             float: right;
         }
+        .dropdown-field {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .dropdown-input {
+            width: 100%;
+            padding-right: 32px;
+        }
+        .dropdown-btn {
+            position: absolute;
+            right: 6px;
+            top: 8px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .dropdown-list {
+            display: none;
+            position: absolute;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+            background: #232323;
+            border: 1px solid #444;
+            border-radius: 0 0 4px 4px;
+            z-index: 10;
+            margin-top: 2px;
+            box-sizing: border-box;
+        }
+        .dropdown-list.show {
+            display: block;
+        }
+        .dropdown-list li {
+            padding: 8px 10px;
+            cursor: pointer;
+            color: #fff;
+        }
+        .dropdown-list li:hover, .dropdown-list li.active {
+            background: #4CAF50;
+            color: #fff;
+        }
+        .dropdown-list .stock-info {
+            float: right;
+            color: #aaa;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
@@ -310,13 +359,13 @@ function get_table_name($field) {
             <div class="success">✅ <?= $success_message ?></div>
         <?php endif; ?>
 
-        <form method="post">
+        <form method="post" autocomplete="off">
             <label for="assembly_price">Цена сборки:</label>
             <input type="number" id="assembly_price" name="assembly_price" 
                    value="<?= htmlspecialchars($_POST['assembly_price'] ?? '') ?>" required>
 
             <label for="date_of_admission">Дата оформления:</label>
-            <input type="date" id="date_of_admission" name="date_of_admission" 
+            <input type="date" id="date_of_admission" name="date_of_admission"
                    value="<?= htmlspecialchars($_POST['date_of_admission'] ?? '') ?>" required>
 
             <label for="date_of_delivery">Дата доставки:</label>
@@ -348,7 +397,9 @@ function get_table_name($field) {
                 <?php endforeach; ?>
             </select>
 
-            <?php foreach ([
+            <?php
+            // Массив для полей с поиском
+            $component_fields = [
                 'gpu_id' => ['label' => 'Видеокарта', 'data' => $components['gpu']],
                 'cse_id' => ['label' => 'Корпус', 'data' => $components['mcase']],
                 'mbd_id' => ['label' => 'Материнская плата', 'data' => $components['motherboard']],
@@ -356,19 +407,41 @@ function get_table_name($field) {
                 'cpu_id' => ['label' => 'Процессор', 'data' => $components['processor']],
                 'ram_id' => ['label' => 'Оперативная память', 'data' => $components['ram']],
                 'sdu_id' => ['label' => 'Накопитель', 'data' => $components['storage']]
-            ] as $field => $config): ?>
-                <label for="<?= $field ?>"><?= $config['label'] ?>:</label>
-                <select id="<?= $field ?>" name="<?= $field ?>" required>
-                    <option value="">Выберите <?= mb_strtolower($config['label']) ?>...</option>
-                    <?php foreach ($config['data'] as $id => $item): ?>
-                        <option value="<?= $id ?>" <?= ($_POST[$field] ?? '') == $id ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($item['name']) ?>
-                            <?php if(isset($item['stock'])): ?>
-                                <span class="stock-info">(Остаток: <?= $item['stock'] ?>)</span>
-                            <?php endif; ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+            ];
+            foreach ($component_fields as $field => $config):
+                $input_value = '';
+                // Получить выбранное название по id, если есть
+                if (isset($_POST[$field]) && $_POST[$field] && isset($config['data'][$_POST[$field]])) {
+                    $input_value = htmlspecialchars($config['data'][$_POST[$field]]['name']);
+                }
+            ?>
+                <label for="<?= $field ?>_input"><?= $config['label'] ?>:</label>
+                <div class="dropdown-field">
+                    <input type="text"
+                        class="dropdown-input"
+                        id="<?= $field ?>_input"
+                        name="<?= $field ?>_input"
+                        placeholder="Начните вводить..."
+                        value="<?= $input_value ?>"
+                        autocomplete="off"
+                        data-dropdown="<?= $field ?>"
+                        required
+                        style="background:#333;cursor:pointer;"
+                    >
+                    <button type="button" class="dropdown-btn" tabindex="-1" onclick="toggleDropdown('<?= $field ?>')">&#x25BC;</button>
+                    <ul class="dropdown-list" id="<?= $field ?>_list">
+                        <li data-value="">Выберите <?= mb_strtolower($config['label']) ?>...</li>
+                        <?php foreach ($config['data'] as $id => $item): ?>
+                            <li data-value="<?= $id ?>">
+                                <?= htmlspecialchars($item['name']) ?>
+                                <?php if(isset($item['stock'])): ?>
+                                    <span class="stock-info">(Ост: <?= $item['stock'] ?>)</span>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <input type="hidden" name="<?= $field ?>" id="<?= $field ?>" value="<?= htmlspecialchars($_POST[$field] ?? '') ?>">
+                </div>
             <?php endforeach; ?>
 
             <input type="submit" value="Оформить заказ">
@@ -378,6 +451,68 @@ function get_table_name($field) {
     <footer>
         © 2025 PC Club
     </footer>
+    <script>
+        document.querySelectorAll('.dropdown-input').forEach(function(input) {
+            input.addEventListener('focus', function() {
+                showDropdown(this.dataset.dropdown);
+            });
+            input.addEventListener('input', function() {
+                filterDropdown(this.dataset.dropdown, this.value);
+            });
+        });
+
+        // Открытие по кнопке
+        function toggleDropdown(field) {
+            var list = document.getElementById(field + '_list');
+            list.classList.toggle('show');
+            document.getElementById(field + '_input').focus();
+        }
+        function showDropdown(field) {
+            document.querySelectorAll('.dropdown-list').forEach(function(list) {
+                list.classList.remove('show');
+            });
+            document.getElementById(field + '_list').classList.add('show');
+        }
+
+        // Фильтрация списка
+        function filterDropdown(field, value) {
+            var list = document.getElementById(field + '_list');
+            var filter = value.toLowerCase();
+            list.querySelectorAll('li').forEach(function(li, idx) {
+                if (idx === 0) return; 
+                li.style.display = li.textContent.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        }
+
+        // Выбор элемента
+        document.querySelectorAll('.dropdown-list').forEach(function(list) {
+            list.addEventListener('click', function(e) {
+                if (e.target.tagName.toLowerCase() === 'li') {
+                    var val = e.target.getAttribute('data-value');
+                    var field = this.id.replace('_list','');
+                    var input = document.getElementById(field + '_input');
+                    var hidden = document.getElementById(field);
+                    if (val) {
+                        input.value = e.target.childNodes[0].textContent.trim();
+                        hidden.value = val;
+                    } else {
+                        input.value = '';
+                        hidden.value = '';
+                    }
+                    this.classList.remove('show');
+                }
+            });
+        });
+
+        // Закрытие списка клик
+        document.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('dropdown-input') && !e.target.classList.contains('dropdown-btn')) {
+                document.querySelectorAll('.dropdown-list').forEach(function(list) {
+                    list.classList.remove('show');
+                });
+            }
+        });
+    </script>
 </body>
 </html>
 <?php
