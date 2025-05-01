@@ -13,6 +13,7 @@
             <ul>
                 <li><a href="edit_content.php">Редактировать содержание</a></li>
                 <li><a href="order_form.php">Оформить заказ</a></li>
+                <li><a href="logout.php">Выйти</a></li>
             </ul>
         </nav>
     </header>

@@ -12,7 +12,7 @@ if (!$link) {
 }
 
 // Проверяем, авторизован ли пользователь как администратор
-if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
+if (!isset($_SESSION['user_id']) || $_SESSION['adminflag'] != 1) {
     header("Location: login.php");
     exit;
 }

@@ -12,18 +12,73 @@ if (!$link) {
     die("Ошибка подключения: " . mysqli_connect_error());
 }
 
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['adminflag'] == 1) {
+        header("Location: edit_content.php");
+    } else {
+        header("Location: index.php");
+    }
+    exit;
+}
+
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    if (isset($_POST['login'])) {
+        // Обработка входа
+        $username = $_POST['username'];
+        $password = $_POST['password'];
 
-    if ($username === 'admin' && $password === 'admin') {
-        $_SESSION['admin'] = true;
-        header("Location: edit_content.php");
-        exit;
-    } else {
-        $error = "Неверные учетные данные.";
+        $sql = "SELECT id, password, adminflag FROM users WHERE login = ?";
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $username);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        if (mysqli_num_rows($result) > 0) {
+            $user = mysqli_fetch_assoc($result);
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['adminflag'] = $user['adminflag'];
+                if ($user['adminflag'] == 1) {
+                    header("Location: edit_content.php");
+                } else {
+                    header("Location: index.php");
+                }
+                exit;
+            } else {
+                $error = "Неверный пароль.";
+            }
+        } else {
+            $error = "Пользователь не найден.";
+        }
+        mysqli_stmt_close($stmt);
+    } elseif (isset($_POST['register'])) {
+        // Обработка регистрации
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+
+        // Проверка существования пользователя
+        $check_sql = "SELECT id FROM users WHERE login = ?";
+        $stmt = mysqli_prepare($link, $check_sql);
+        mysqli_stmt_bind_param($stmt, "s", $username);
+        mysqli_stmt_execute($stmt);
+        $check_result = mysqli_stmt_get_result($stmt);
+
+        if (mysqli_num_rows($check_result) > 0) {
+            $error = "Пользователь с таким логином уже существует.";
+        } else {
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $insert_sql = "INSERT INTO users (login, password, adminflag) VALUES (?, ?, 0)";
+            $stmt = mysqli_prepare($link, $insert_sql);
+            mysqli_stmt_bind_param($stmt, "ss", $username, $hashed_password);
+            if (mysqli_stmt_execute($stmt)) {
+                $error = "Регистрация успешна. Теперь вы можете войти.";
+            } else {
+                $error = "Ошибка регистрации: " . mysqli_error($link);
+            }
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 ?>
@@ -33,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход в админ-панель</title>
+    <title>Вход и регистрация</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -87,6 +142,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             cursor: pointer;
             border-radius: 4px;
             width: 100%;
+            margin-bottom: 10px;
         }
 
         input[type="submit"]:hover {
@@ -113,27 +169,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-
-    <h2>Вход в админ-панель</h2>
+    <h2>Вход и регистрация</h2>
 
     <?php if ($error): ?>
-        
-
-<?php echo $error; ?>
-
+        <p class="error"><?php echo $error; ?></p>
     <?php endif; ?>
 
     <form method="post">
         <label for="username">Имя пользователя:</label>
-        <input type="text" id="username" name="username" required><br>
+        <input type="text" id="username" name="username" required>
 
         <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required><br>
+        <input type="password" id="password" name="password" required>
 
-        <input type="submit" value="Войти">
+        <input type="submit" name="login" value="Войти">
+        <input type="submit" name="register" value="Зарегистрироваться">
     </form>
 
     <a href="index.php">Вернуться на главную</a>
-
 </body>
 </html>
