@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once 'validator.php';
+$validationRules = require 'validation_rules.php';
 
 $host = 'localhost';
 $user = 'root';
@@ -12,15 +14,13 @@ if (!$link) {
     die("Ошибка подключения: " . mysqli_connect_error());
 }
 
-// Проверяем, авторизован ли пользователь как администратор
-if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
+if (!isset($_SESSION['user_id']) || $_SESSION['adminflag'] != 1) {
     header("Location: login.php");
     exit;
 }
 
 $table = $_GET['table'] ?? '';
 
-// Функция для получения имени столбца ID
 function getIdColumn($table) {
     switch ($table) {
         case 'assembly': return 'assembly_order_id';
@@ -35,6 +35,53 @@ function getIdColumn($table) {
         case 'storage': return 'sdu_id';
         default: return 'id'; 
     }
+}
+
+$validator = new validator($link, $validationRules);
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $errors = [];
+    
+    if (isset($validationRules[$table])) {
+        $errors = $validator->validate($_POST, $table);
+    }
+
+    if (empty($errors)) {
+        $columns = [];
+        $values = [];
+        $placeholders = [];
+        $types = "";
+        
+        foreach ($_POST as $column => $value) {
+            if ($column !== getIdColumn($table)) {
+                $columns[] = $column;
+                $values[] = $value;
+                $placeholders[] = "?";
+                $types .= "s";
+            }
+        }
+        
+        try {
+            $sql = "INSERT INTO $table (".implode(', ', $columns).") VALUES (".implode(', ', $placeholders).")";
+            $stmt = $link->prepare($sql);
+            $stmt->bind_param($types, ...$values);
+            
+            if ($stmt->execute()) {
+                $_SESSION['success'] = "Запись успешно добавлена";
+                header("Location: edit_content.php");
+                exit;
+            } else {
+                throw new Exception($stmt->error);
+            }
+        } catch (Exception $e) {
+            $errors[] = "Ошибка базы данных: " . $e->getMessage();
+        }
+    }
+    
+    $_SESSION['errors'] = $errors;
+    $_SESSION['old'] = $_POST;
+    header("Location: add_data.php?table=$table");
+    exit;
 }
 ?>
 
@@ -160,13 +207,21 @@ function getIdColumn($table) {
     </style>
 </head>
 <body>
+    <?php if (isset($_SESSION['errors'])): ?>
+        <div class="error-container">
+            <?php foreach ($_SESSION['errors'] as $error): ?>
+                <div class="error"><?= $error ?></div>
+            <?php endforeach; ?>
+            <?php unset($_SESSION['errors']); unset($_SESSION['old']); ?>
+        </div>
+    <?php endif; ?>
 
     <header>
-        <h1>Добавить запись в таблицу <?php echo htmlspecialchars($table); ?></h1>
+        <h1>Добавить запись в <?= htmlspecialchars($table) ?></h1>
         <nav>
             <ul>
                 <li><a href="index.php">Главная</a></li>
-                <li><a href="edit_content.php">Редактировать контент</a></li>
+                <li><a href="edit_content.php">Редактировать</a></li>
             </ul>
         </nav>
     </header>
@@ -175,80 +230,26 @@ function getIdColumn($table) {
         <?php if ($table): ?>
             <form method="post">
                 <?php
-                // Получение структуры таблицы
-                $sql = "SHOW COLUMNS FROM $table";
-                $result = $link->query($sql);
-
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        $column = $row['Field'];
-                        if ($column !== getIdColumn($table)) { // Исключение ID
-                            echo "<label for='$column'>$column:</label>";
-                            echo "<input type='text' id='$column' name='$column'><br><br>";
-                        }
-                    }
-                }
+                $result = $link->query("SHOW COLUMNS FROM $table");
+                while ($row = $result->fetch_assoc()):
+                    $column = $row['Field'];
+                    if ($column !== getIdColumn($table)):
                 ?>
+                    <div class="form-group">
+                        <label><?= $column ?></label>
+                        <input type="text" 
+                               name="<?= $column ?>" 
+                               value="<?= htmlspecialchars($_SESSION['old'][$column] ?? '') ?>"
+                               class="<?= isset($_SESSION['errors'][$column]) ? 'error-field' : '' ?>">
+                        <?php if (isset($_SESSION['errors'][$column])): ?>
+                            <div class="field-error"><?= $_SESSION['errors'][$column] ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; endwhile; ?>
                 <input type="submit" value="Добавить">
             </form>
-
-            <?php
-            if ($_SERVER["REQUEST_METHOD"] == "POST") {
-                // Сбор данных для вставки
-                $columns = array();
-                $values = array();
-                $placeholders = array();
-                $types = "";
-                $bind_values = array();
-
-                $sql_columns = "SHOW COLUMNS FROM $table";
-                $result_columns = $link->query($sql_columns);
-
-                while ($row = $result_columns->fetch_assoc()) {
-                    $column = $row['Field'];
-                    if ($column !== getIdColumn($table)) {
-                        $columns[] = $column;
-                        $values[] = $_POST[$column];
-                        $placeholders[] = "?";
-                        $types .= "s";
-                        $bind_values[] = &$_POST[$column];
-                    }
-                }
-
-                $columns_string = implode(", ", $columns);
-                $placeholders_string = implode(", ", $placeholders);
-
-                // SQL-запрос
-                $sql = "INSERT INTO $table ($columns_string) VALUES ($placeholders_string)";
-                $stmt = $link->prepare($sql);
-
-                $stmt->bind_param($types, ...$bind_values);
-
-                // Запрос
-                if ($stmt->execute()) {
-                    echo "<p>Запись успешно добавлена в таблицу $table.</p>";
-                } else {
-                    echo "<p>Ошибка добавления записи: " . $stmt->error . "</p>";
-                }
-
-                $stmt->close();
-            }
-            ?>
-        <?php else: ?>
-            
-
-Выберите таблицу для добавления записи.
-
         <?php endif; ?>
     </main>
-
-    <footer>
-        © 2025 PC Club
-    </footer>
-
 </body>
 </html>
-
-<?php
-mysqli_close($link);
-?>
+<?php mysqli_close($link); ?>

@@ -1,9 +1,12 @@
 <?php
-session_start(); 
+session_start();
+require_once 'validator.php';
+$validationRules = require 'validation_rules.php';
+
 $host = 'localhost';
 $user = 'root';
 $password = '';
-$db_name = 'web_magazin'; 
+$db_name = 'web_magazin';
 
 $link = mysqli_connect($host, $user, $password, $db_name);
 
@@ -11,8 +14,7 @@ if (!$link) {
     die("Ошибка подключения: " . mysqli_connect_error());
 }
 
-// Администратор
-if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
+if (!isset($_SESSION['user_id']) || $_SESSION['adminflag'] != 1) {
     header("Location: login.php");
     exit;
 }
@@ -20,7 +22,6 @@ if (!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) {
 $table = $_GET['table'] ?? '';
 $id = $_GET['id'] ?? 0;
 
-// Функция для получения имени столбца ID
 function getIdColumn($table) {
     switch ($table) {
         case 'assembly': return 'assembly_order_id';
@@ -33,14 +34,12 @@ function getIdColumn($table) {
         case 'processor': return 'cpu_id';
         case 'ram': return 'ram_id';
         case 'storage': return 'sdu_id';
-        default: return 'id';
+        default: return 'id'; 
     }
 }
 
-// Получаем данные из бд
 $idColumn = getIdColumn($table);
-$sql = "SELECT * FROM $table WHERE $idColumn = ?";
-$stmt = $link->prepare($sql);
+$stmt = $link->prepare("SELECT * FROM $table WHERE $idColumn = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -50,14 +49,61 @@ if ($result->num_rows == 0) {
 }
 
 $row = $result->fetch_assoc();
+
+$validator = new validator($link, $validationRules);
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $errors = [];
+    
+    if (isset($validationRules[$table])) {
+        $errors = $validator->validate($_POST, $table);
+    }
+
+    if (empty($errors)) {
+        try {
+            $updates = [];
+            $values = [];
+            $types = "";
+            
+            foreach ($_POST as $column => $value) {
+                if ($column !== $idColumn) {
+                    $updates[] = "$column = ?";
+                    $values[] = $value;
+                    $types .= "s";
+                }
+            }
+            
+            $sql = "UPDATE $table SET ".implode(', ', $updates)." WHERE $idColumn = ?";
+            $values[] = $id;
+            $types .= "i";
+            
+            $stmt = $link->prepare($sql);
+            $stmt->bind_param($types, ...$values);
+            
+            if ($stmt->execute()) {
+                $_SESSION['success'] = "Запись успешно обновлена";
+                header("Location: edit_content.php");
+                exit;
+            } else {
+                throw new Exception($stmt->error);
+            }
+        } catch (Exception $e) {
+            $errors[] = "Ошибка базы данных: " . $e->getMessage();
+        }
+    }
+    
+    $_SESSION['errors'] = $errors;
+    $_SESSION['old'] = $_POST;
+    header("Location: edit_form.php?table=$table&id=$id");
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактирование данных</title>
+    <title>Редактирование</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -174,87 +220,32 @@ $row = $result->fetch_assoc();
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>Редактирование данных</h1>
-        <nav>
-            <ul>
-                <li><a href="index.php">Главная</a></li>
-                <li><a href="edit_content.php">Редактировать контент</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main>
-        <form method="post">
-            <?php foreach ($row as $column => $value): ?>
-                <?php if ($column !== 'table' && $column !== 'id'): ?>
-                    <label for="<?php echo $column; ?>"><?php echo $column; ?>:</label>
-                    <input type="text" id="<?php echo $column; ?>" name="<?php echo $column; ?>" value="<?php echo htmlspecialchars($value); ?>">
-                <?php endif; ?>
+    <?php if (isset($_SESSION['errors'])): ?>
+        <div class="error-container">
+            <?php foreach ($_SESSION['errors'] as $error): ?>
+                <div class="error"><?= $error ?></div>
             <?php endforeach; ?>
-            <input type="submit" value="Сохранить">
-        </form>
+            <?php unset($_SESSION['errors']); unset($_SESSION['old']); ?>
+        </div>
+    <?php endif; ?>
 
-        <?php
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            $host = 'localhost';
-            $user = 'root';
-            $password = '';
-            $db_name = 'web_magazin';
-
-            $link = mysqli_connect($host, $user, $password, $db_name);
-
-            if (!$link) {
-                die("Ошибка подключения: " . mysqli_connect_error());
-            }
-
-            $idColumn = getIdColumn($table);
-            $sql = "UPDATE $table SET ";
-            $updates = array();
-            $types = "";
-            $values = array();
-            foreach ($_POST as $column => $value) {
-                if ($column != 'table' && $column != 'id') {
-                    $updates[] = "$column = ?";
-                    $types .= "s"; 
-                    $values[] = $value;
-                }
-            }
-            $sql .= implode(', ', $updates);
-            $sql .= " WHERE $idColumn = ?";
-
-            // Подготовка запроса
-            $stmt = $link->prepare($sql);
-
-            // Добавляем ID в массив значений
-            $values[] = $id;
-            $types .= "i"; 
-
-            // Формируем строку типов для bind_param
-            $typesString = str_repeat("s", count($values) - 1) . "i";
-
-            // Привязываем параметры
-            $stmt->bind_param($typesString, ...$values);
-
-
-            if ($stmt->execute()) {
-                echo "<p>Запись успешно обновлена.</p>";
-            } else {
-                echo "<p>Ошибка обновления записи: " . $stmt->error . "</p>";
-            }
-
-            $stmt->close();
-            mysqli_close($link);
-        }
-        ?>
-    </main>
-
-    <a href="edit_content.php" class="back-link">Вернуться к редактированию контента</a>
-
-    <footer>
-        © 2025 PC Club
-    </footer>
-
+    <form method="post">
+        <?php foreach ($row as $column => $value): ?>
+            <?php if ($column !== $idColumn): ?>
+                <div class="form-group">
+                    <label><?= $column ?></label>
+                    <input type="text" 
+                           name="<?= $column ?>" 
+                           value="<?= htmlspecialchars($_SESSION['old'][$column] ?? $value) ?>"
+                           class="<?= isset($_SESSION['errors'][$column]) ? 'error-field' : '' ?>">
+                    <?php if (isset($_SESSION['errors'][$column])): ?>
+                        <div class="field-error"><?= $_SESSION['errors'][$column] ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+        <input type="submit" value="Сохранить">
+    </form>
 </body>
 </html>
+<?php mysqli_close($link); ?>
