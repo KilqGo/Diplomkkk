@@ -273,8 +273,9 @@ function get_table_name($field) {
         <h1>🛒 Оформить заказ</h1>
         <nav>
             <ul>
-                <li><a href="index.php">🏠 Главная</a></li>
                 <li><a href="edit_content.php">📝 Редактировать контент</a></li>
+                <li><a href="index.php">🏠 Главная</a></li>
+                <li><a href="logout.php">🔁 Смена учетной записи</a></li>
             </ul>
         </nav>
     </header>

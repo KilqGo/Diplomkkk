@@ -226,8 +226,9 @@ $search_query = $_GET['search'] ?? '';
         <h1>📦 Управление складом PC Club</h1>
         <nav>
             <ul>
-                <li><a href="edit_content.php">📝 Редактирование данных</a></li>
+                <li><a href="edit_content.php">📝 Админ панель</a></li>
                 <li><a href="index.php">🏠 Главная</a></li>
+                <li><a href="order_form.php">🛒 Оформить заказ</a></li>
                 <li><a href="logout.php">🚪 Выйти</a></li>
             </ul>
         </nav>
