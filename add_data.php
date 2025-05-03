@@ -245,8 +245,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <nav>
             <ul>
                 <li><a href="stock_management.php">📦 Склад</a></li>
-                <li><a href="edit_content.php">📋 Таблицы</a></li>
+                <li><a href="edit_content.php">📝 Админ панель</a></li>
                 <li><a href="index.php">🏠 Главная</a></li>
+                <li><a href="order_form.php">🛒 Оформить заказ</a></li>
+                <li><a href="logout.php">🚪 Выйти</a></li>
             </ul>
         </nav>
     </header>
