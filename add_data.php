@@ -108,6 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: white;
             padding: 20px;
             text-align: center;
+            border-bottom: 2px solid #4CAF50;
         }
 
         nav ul {
@@ -115,120 +116,155 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             padding: 0;
             display: flex;
             justify-content: center;
-        }
-
-        nav ul li {
-            margin-right: 20px;
+            gap: 25px;
+            margin: 15px 0;
         }
 
         nav ul li a {
             color: #4CAF50;
             text-decoration: none;
+            font-size: 1.1em;
+            transition: color 0.3s;
         }
 
         nav ul li a:hover {
+            color: #45a049;
             text-decoration: underline;
         }
 
-        main {
-            flex: 1;
-            padding: 20px;
+        .main-container {
+            width: 85%;
+            margin: 25px auto;
+            background-color: #2c2c2c;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
 
-        form {
-            width: 80%;
+        .form-title {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .data-form {
+            width: 100%;
             max-width: 600px;
             margin: 0 auto;
-            background-color: #2c2c2c;
-            padding: 20px;
-            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             color: #ffffff;
+            font-weight: bold;
         }
 
         input[type="text"],
         input[type="number"],
         input[type="date"] {
             width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #333;
-            color: #ffffff;
+            padding: 12px;
+            border: 2px solid #4CAF50;
+            border-radius: 6px;
+            background-color: #1e1e1e;
+            color: white;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
 
-        input[type="submit"] {
+        input:focus {
+            border-color: #45a049;
+            outline: none;
+        }
+
+        .error-field {
+            border-color: #ff4444 !important;
+        }
+
+        .field-error {
+            color: #ff4444;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .alert-error {
+            background-color: #4a1c1c;
+            color: #ff4444;
+            border: 1px solid #ff4444;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 15px;
             background-color: #4CAF50;
             color: white;
-            padding: 10px 20px;
             border: none;
+            border-radius: 6px;
+            font-size: 16px;
             cursor: pointer;
-            border-radius: 4px;
-            width: 100%;
+            transition: all 0.3s;
         }
 
-        input[type="submit"]:hover {
+        button[type="submit"]:hover {
             background-color: #45a049;
-        }
-
-        p {
-            color: #4CAF50;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
+            transform: translateY(-2px);
         }
 
         footer {
             text-align: center;
-            padding: 10px;
+            padding: 20px;
             background-color: #1e1e1e;
             color: white;
             margin-top: auto;
+            border-top: 2px solid #4CAF50;
         }
 
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
+        @media (max-width: 768px) {
+            .main-container {
+                width: 95%;
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <?php if (isset($_SESSION['errors'])): ?>
-        <div class="error-container">
-            <?php foreach ($_SESSION['errors'] as $error): ?>
-                <div class="error"><?= $error ?></div>
-            <?php endforeach; ?>
-            <?php unset($_SESSION['errors']); unset($_SESSION['old']); ?>
-        </div>
-    <?php endif; ?>
-
     <header>
-        <h1>Добавить запись в <?= htmlspecialchars($table) ?></h1>
+        <h1>📥 Добавить запись</h1>
         <nav>
             <ul>
-                <li><a href="index.php">Главная</a></li>
-                <li><a href="edit_content.php">Редактировать</a></li>
+                <li><a href="stock_management.php">📦 Склад</a></li>
+                <li><a href="edit_content.php">📋 Таблицы</a></li>
+                <li><a href="index.php">🏠 Главная</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
+    <div class="main-container">
+        <?php if (isset($_SESSION['errors'])): ?>
+            <div class="alert alert-error">
+                <?php foreach ($_SESSION['errors'] as $error): ?>
+                    <div>❌ <?= $error ?></div>
+                <?php endforeach; ?>
+                <?php unset($_SESSION['errors']); unset($_SESSION['old']); ?>
+            </div>
+        <?php endif; ?>
+
+        <h2 class="form-title">Добавление в таблицу: <?= htmlspecialchars($table) ?></h2>
+        
         <?php if ($table): ?>
-            <form method="post">
+            <form class="data-form" method="post">
                 <?php
                 $result = $link->query("SHOW COLUMNS FROM $table");
                 while ($row = $result->fetch_assoc()):
@@ -246,10 +282,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <?php endif; ?>
                     </div>
                 <?php endif; endwhile; ?>
-                <input type="submit" value="Добавить">
+                <button type="submit">➕ Добавить запись</button>
             </form>
         <?php endif; ?>
-    </main>
+    </div>
+
+    <footer>
+        © <?= date('Y') ?> PC Club | Все права защищены
+    </footer>
 </body>
 </html>
 <?php mysqli_close($link); ?>

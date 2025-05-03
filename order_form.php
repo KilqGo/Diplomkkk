@@ -176,172 +176,105 @@ function get_table_name($field) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Форма оформления заказа</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+         header h1 {
+        color: white !important; 
         }
-
-        header {
-            background-color: #1e1e1e;
-            color: white;
-            padding: 20px;
-            text-align: center;
+        .dropdown-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            position: absolute;
+            right: 6px;
+            top: 8px;
+            z-index: 2;
         }
-
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        nav ul li {
-            margin-right: 20px;
-        }
-
-        nav ul li a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-
-        nav ul li a:hover {
-            text-decoration: underline;
-        }
-
-        main {
-            flex: 1;
-            padding: 20px;
+        
+        .stock-info {
+            float: right;
+            font-size: 0.85em;
+            color: #888;
         }
 
         form {
-            width: 80%;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #2c2c2c;
-            padding: 20px;
-            border-radius: 8px;
+        max-width: 600px;
+        margin: 0 auto;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
-            color: #ffffff;
+            margin: 15px 0 8px;
+            color: #ddd;
         }
 
-        input[type="number"],
-        input[type="date"],
-        input[type="text"],
-        select {
+        input:not([type="submit"]), 
+        select, 
+        .dropdown-field {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ddd;
+            background: #333;
+            border: 1px solid #444;
             border-radius: 4px;
-            background-color: #333;
-            color: #ffffff;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        .dropdown-field {
+            position: relative;
+        }
+
+        .dropdown-input {
+            padding-right: 30px;
+            cursor: pointer;
         }
 
         input[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
+            width: auto;
+            padding: 12px 25px;
+            margin-top: 20px;
+            background: #28a745;
             border: none;
             cursor: pointer;
-            border-radius: 4px;
-            width: 100%;
         }
 
-        input[type="submit"]:hover {
-            background-color: #45a049;
+        .dropdown-list {
+            width: calc(100% - 2px); 
+            max-width: 100%;
+            left: 0;
+            right: 0;
+            margin-top: -5px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            max-height: 200px;
+            white-space: nowrap;
         }
 
-        .errors {
-            color: #ff4444;
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #2c2c2c;
-            border-radius: 4px;
-        }
-
-        .success {
-            color: #4CAF50;
-            text-align: center;
-            padding: 15px;
-            margin: 20px 0;
-            background-color: #2c2c2c;
-            border-radius: 4px;
+        .dropdown-list li {
+            padding: 8px 30px 8px 12px;
+            position: relative;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stock-info {
-            font-size: 0.9em;
-            color: #888;
-            float: right;
-        }
-        .dropdown-field {
-            position: relative;
-            margin-bottom: 15px;
-        }
-        .dropdown-input {
-            width: 100%;
-            padding-right: 32px;
-        }
-        .dropdown-btn {
             position: absolute;
-            right: 6px;
-            top: 8px;
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 18px;
-            cursor: pointer;
-            z-index: 2;
-        }
-        .dropdown-list {
-            display: none;
-            position: absolute;
-            width: 100%;
-            max-height: 180px;
-            overflow-y: auto;
-            background: #232323;
-            border: 1px solid #444;
-            border-radius: 0 0 4px 4px;
-            z-index: 10;
-            margin-top: 2px;
-            box-sizing: border-box;
-        }
-        .dropdown-list.show {
-            display: block;
-        }
-        .dropdown-list li {
-            padding: 8px 10px;
-            cursor: pointer;
-            color: #fff;
-        }
-        .dropdown-list li:hover, .dropdown-list li.active {
-            background: #4CAF50;
-            color: #fff;
-        }
-        .dropdown-list .stock-info {
-            float: right;
-            color: #aaa;
-            font-size: 0.85em;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8em;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Оформить заказ</h1>
+        <h1>🛒 Оформить заказ</h1>
         <nav>
             <ul>
-                <li><a href="index.php">Главная</a></li>
-                <li><a href="edit_content.php">Редактировать контент</a></li>
+                <li><a href="index.php">🏠 Главная</a></li>
+                <li><a href="edit_content.php">📝 Редактировать контент</a></li>
             </ul>
         </nav>
     </header>
@@ -449,7 +382,7 @@ function get_table_name($field) {
     </main>
 
     <footer>
-        © 2025 PC Club
+        © <?= date('Y') ?> PC Club | Все права защищены
     </footer>
     <script>
         document.querySelectorAll('.dropdown-input').forEach(function(input) {

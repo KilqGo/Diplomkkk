@@ -88,104 +88,118 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход и регистрация</title>
+    <title>Авторизация - PC Club</title>
+    <link rel="stylesheet" href="style.css"> 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
+         header h1 {
+        color: white !important; }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--accent-color);
+        }
+        
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .auth-container .form-group {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        h2 {
-            color: #ffffff;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        form {
-            background-color: #2c2c2c;
-            padding: 20px;
-            border-radius: 8px;
-            width: 300px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #ffffff;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #333;
-            color: #ffffff;
-        }
-
-        input[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        input[type="submit"]:hover {
-            background-color: #45a049;
-        }
-
-        p.error {
-            color: #ff6666;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        a {
-            color: #4CAF50;
-            text-decoration: none;
-            display: block;
-            text-align: center;
+            gap: 15px;
             margin-top: 20px;
         }
 
-        a:hover {
-            text-decoration: underline;
+        .auth-container button[type="submit"] {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        .auth-switch a {
+            color: var(--accent-color) !important;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .auth-switch a:visited {
+            color: var(--accent-color) !important;
+        }
+
+        .auth-switch a:hover {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container .form-group {
+                flex-direction: column;
+            }
         }
     </style>
+
 </head>
 <body>
-    <h2>Вход и регистрация</h2>
+    <header>
+        <h1>🔐 Авторизация PC Club</h1>
+        <nav>
+            <ul>
+                <li><a href="index.php">🏠 Главная</a></li>
+                <li><a href="order_form.php">🛒 Заказы</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <?php if ($error): ?>
-        <p class="error"><?php echo $error; ?></p>
-    <?php endif; ?>
+    <main>
+        <div class="auth-container">
+            <h2 class="auth-title">Вход / Регистрация</h2>
+            
+            <?php if ($error): ?>
+                <div class="alert alert-error">
+                    ⚠️ <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
 
-    <form method="post">
-        <label for="username">Имя пользователя:</label>
-        <input type="text" id="username" name="username" required>
+            <form method="post">
+                <div class="form-group">
+                    <label>Имя пользователя</label>
+                    <input type="text" 
+                           name="username" 
+                           required
+                           placeholder="Введите ваш логин">
+                </div>
 
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" 
+                           name="password" 
+                           required
+                           placeholder="••••••••">
+                </div>
 
-        <input type="submit" name="login" value="Войти">
-        <input type="submit" name="register" value="Зарегистрироваться">
-    </form>
+                <div class="form-group">
+                    <button type="submit" name="login">🚪 Войти</button>
+                    <button type="submit" name="register">📝 Зарегистрироваться</button>
+                </div>
+            </form>
 
-    <a href="index.php">Вернуться на главную</a>
+            <div class="auth-switch">
+                <a href="index.php">← Вернуться на главную</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        © <?= date('Y') ?> PC Club | Все права защищены
+    </footer>
 </body>
 </html>
