@@ -295,6 +295,9 @@ $search_columns = [
                             <td class="actions-cell">
                                 <button onclick="editData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">✏️</button>
                                 <button onclick="deleteData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">🗑️</button>
+                                <?php if($selected_table === 'assembly'): ?>
+                                <button onclick="exportAssembly(<?= $row['assembly_order_id'] ?>)">📤 Экспорт</button>
+                                <?php endif; ?>
                             </td>
                         </tr>
                 <?php
@@ -315,6 +318,10 @@ $search_columns = [
         function editData(table, id) {
             window.location.href = `edit_form.php?table=${table}&id=${id}`;
         }
+
+function exportAssembly(id) {
+    window.open(`export.php?table=assembly&id=${id}&format=doc`, '_blank');
+}
 
         function deleteData(table, id) {
             if (confirm('Вы уверены, что хотите удалить запись?')) {
