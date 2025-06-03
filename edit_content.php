@@ -194,6 +194,30 @@ $search_columns = [
             white-space: nowrap;
         }
 
+                
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+            margin-top: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: #4CAF50 #1e1e1e;
+        }
+        
+        .table-container::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 5px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: #4CAF50;
+            border-radius: 5px;
+            border: 2px solid #1e1e1e;
+        }
+
         footer {
             text-align: center;
             padding: 20px;
@@ -204,6 +228,13 @@ $search_columns = [
         }
 
         @media (max-width: 768px) {
+
+                @media (max-width: 768px) {
+            .table-container {
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;}
+            }
+            
             .main-container {
                 width: 95%;
                 padding: 15px;
@@ -256,58 +287,59 @@ $search_columns = [
                 <a href="add_data.php?table=<?= $selected_table ?>" class="button">➕ Добавить запись</a>
             </div>
         </form>
-
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <?php foreach ($table_headers[$selected_table] as $header): ?>
-                        <th><?= htmlspecialchars($header) ?></th>
-                    <?php endforeach; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $sql = "SELECT * FROM $selected_table";
-                $params = [];
-                
-                if (!empty($search_query)) {
-                    $search_column = $search_columns[$selected_table];
-                    $sql .= " WHERE $search_column LIKE ?";
-                    $params[] = "%$search_query%";
-                }
-                
-                $stmt = $link->prepare($sql);
-                
-                if ($stmt) {
-                    if (!empty($params)) {
-                        $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <?php foreach ($table_headers[$selected_table] as $header): ?>
+                            <th><?= htmlspecialchars($header) ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $sql = "SELECT * FROM $selected_table";
+                    $params = [];
+                    
+                    if (!empty($search_query)) {
+                        $search_column = $search_columns[$selected_table];
+                        $sql .= " WHERE $search_column LIKE ?";
+                        $params[] = "%$search_query%";
                     }
                     
-                    $stmt->execute();
-                    $result = $stmt->get_result();
+                    $stmt = $link->prepare($sql);
+                    
+                    if ($stmt) {
+                        if (!empty($params)) {
+                            $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+                        }
+                        
+                        $stmt->execute();
+                        $result = $stmt->get_result();
 
-                    while ($row = $result->fetch_assoc()):
-                ?>
-                        <tr>
-                            <?php foreach ($table_columns[$selected_table] as $column): ?>
-                                <td><?= htmlspecialchars($row[$column] ?? 'N/A') ?></td>
-                            <?php endforeach; ?>
-                            <td class="actions-cell">
-                                <button onclick="editData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">✏️</button>
-                                <button onclick="deleteData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">🗑️</button>
-                                <?php if($selected_table === 'assembly'): ?>
-                                <button onclick="exportAssembly(<?= $row['assembly_order_id'] ?>)">📤 Экспорт</button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                <?php
-                    endwhile;
-                } else {
-                    echo '<tr><td colspan="100%">Ошибка выполнения запроса</td></tr>';
-                }
-                ?>
-            </tbody>
-        </table>
+                        while ($row = $result->fetch_assoc()):
+                    ?>
+                            <tr>
+                                <?php foreach ($table_columns[$selected_table] as $column): ?>
+                                    <td><?= htmlspecialchars($row[$column] ?? 'N/A') ?></td>
+                                <?php endforeach; ?>
+                                <td class="actions-cell">
+                                    <button onclick="editData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">✏️</button>
+                                    <button onclick="deleteData('<?= $selected_table ?>', <?= $row[$table_columns[$selected_table][0]] ?>)">🗑️</button>
+                                    <?php if($selected_table === 'assembly'): ?>
+                                    <button onclick="exportAssembly(<?= $row['assembly_order_id'] ?>)">📤 Экспорт</button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                    <?php
+                        endwhile;
+                    } else {
+                        echo '<tr><td colspan="100%">Ошибка выполнения запроса</td></tr>';
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <footer>
